@@ -33,7 +33,8 @@ const eventData = {
       image_url: "https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=400&h=400&fit=crop",
       requires_ticket_type: "adult",
       min_required_tickets: 1,
-      variants: null
+      variants: null,
+      variant_display: "buttons"
     },
     {
       id: "tshirt",
@@ -43,6 +44,7 @@ const eventData = {
       image_url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
       requires_ticket_type: null,
       min_required_tickets: 0,
+      variant_display: "buttons",
       variants: [
         { id: "xs", name: "XS", price_modifier: 0, available: true },
         { id: "s", name: "S", price_modifier: 0, available: true },
@@ -53,6 +55,25 @@ const eventData = {
       ]
     },
     {
+      id: "guided-tour",
+      name: "Guided Tour",
+      description: "Enhance your visit with a 45-minute guided tour led by an expert docent. Available in multiple languages with flexible scheduling options.",
+      price: 25.00,
+      image_url: "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=400&h=400&fit=crop",
+      requires_ticket_type: null,
+      min_required_tickets: 0,
+      variant_display: "dropdown",
+      variants: [
+        { id: "en-10am", name: "English - 10:00 AM", price_modifier: 0, available: true },
+        { id: "en-2pm", name: "English - 2:00 PM", price_modifier: 0, available: true },
+        { id: "en-5pm", name: "English - 5:00 PM", price_modifier: 0, available: false },
+        { id: "es-11am", name: "Spanish - 11:00 AM", price_modifier: 0, available: true },
+        { id: "es-3pm", name: "Spanish - 3:00 PM", price_modifier: 0, available: true },
+        { id: "fr-12pm", name: "French - 12:00 PM", price_modifier: 5, available: true },
+        { id: "private", name: "Private Tour (any language)", price_modifier: 75, available: true }
+      ]
+    },
+    {
       id: "photobook",
       name: "Photo Book",
       description: "A beautiful hardcover photo book featuring the best artworks from the exhibition. Choose your preferred edition.",
@@ -60,6 +81,7 @@ const eventData = {
       image_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=400&fit=crop",
       requires_ticket_type: null,
       min_required_tickets: 0,
+      variant_display: "buttons",
       variants: [
         { id: "standard", name: "Standard", price_modifier: 0, available: true },
         { id: "deluxe", name: "Deluxe", price_modifier: 25, available: true },

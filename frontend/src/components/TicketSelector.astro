@@ -28,6 +28,7 @@ interface AddOn {
   requires_ticket_type?: string;
   min_required_tickets: number;
   variants?: Variant[];
+  variant_display?: 'buttons' | 'dropdown';
 }
 
 interface Props {
@@ -88,6 +89,7 @@ addons.forEach(a => initialAddonQuantities[a.id] = 0);
             quantity={0}
             requiresTicketType={addon.requires_ticket_type}
             variants={addon.variants}
+            variantDisplay={addon.variant_display || 'buttons'}
           />
         ))}
       </div>
@@ -174,7 +176,7 @@ addons.forEach(a => initialAddonQuantities[a.id] = 0);
         if (addon.variants && addon.variants.length > 0 && !addonState.variant_id) {
           errors.push({
             addon_id: addon.id,
-            message: `Please select a size/option for ${addon.name} before adding to cart.`
+            message: `Please select an option for ${addon.name} before adding to cart.`
           });
         }
       }
@@ -305,7 +307,7 @@ addons.forEach(a => initialAddonQuantities[a.id] = 0);
     updateUI();
   }
 
-  // Handle variant selection
+  // Handle variant selection (for both buttons and dropdowns)
   function handleVariantSelect(addonId, variantId) {
     const addon = addons.find(a => a.id === addonId);
     if (!addon || !addon.variants) return;
@@ -313,12 +315,18 @@ addons.forEach(a => initialAddonQuantities[a.id] = 0);
     const addonState = state.addons[addonId];
     addonState.variant_id = variantId;
     
-    // Update variant button states
-    const variantSelector = document.querySelector(`.variant-selector[data-addon-id="${addonId}"]`);
-    if (variantSelector) {
-      variantSelector.querySelectorAll('.variant-btn').forEach(btn => {
+    // Update variant button states (for button display)
+    const variantButtons = document.querySelector(`.variant-buttons[data-addon-id="${addonId}"]`);
+    if (variantButtons) {
+      variantButtons.querySelectorAll('.variant-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.variantId === variantId);
       });
+    }
+    
+    // Update dropdown selected value (for dropdown display)
+    const variantDropdown = document.querySelector(`.variant-dropdown[data-addon-id="${addonId}"] .variant-select`);
+    if (variantDropdown) {
+      variantDropdown.value = variantId;
     }
     
     // Update displayed price
@@ -327,7 +335,7 @@ addons.forEach(a => initialAddonQuantities[a.id] = 0);
     updateUI();
   }
 
-  // Event delegation for quantity buttons
+  // Event delegation for quantity buttons and variant buttons
   document.addEventListener('click', (e) => {
     // Quantity button clicks
     const btn = e.target.closest('.qty-btn');
@@ -357,6 +365,19 @@ addons.forEach(a => initialAddonQuantities[a.id] = 0);
         handleVariantSelect(addonId, variantId);
       }
       return;
+    }
+  });
+
+  // Event listener for dropdown changes
+  document.addEventListener('change', (e) => {
+    const select = e.target.closest('.variant-select');
+    if (select) {
+      const addonId = select.dataset.addonId;
+      const variantId = select.value;
+      
+      if (addonId && variantId) {
+        handleVariantSelect(addonId, variantId);
+      }
     }
   });
 

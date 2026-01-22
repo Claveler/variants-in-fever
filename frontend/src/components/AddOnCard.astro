@@ -18,6 +18,7 @@ interface Props {
   requiresTicketType?: string;
   hasError?: boolean;
   variants?: Variant[];
+  variantDisplay?: 'buttons' | 'dropdown';
   selectedVariant?: string;
 }
 
@@ -31,6 +32,7 @@ const {
   requiresTicketType, 
   hasError = false,
   variants = [],
+  variantDisplay = 'buttons',
   selectedVariant
 } = Astro.props;
 
@@ -48,6 +50,17 @@ const selectedVariantData = hasVariants && selectedVariant
 const displayPrice = selectedVariantData 
   ? price + selectedVariantData.price_modifier 
   : price;
+
+// Format variant option text for dropdown
+const formatVariantOption = (variant: Variant) => {
+  let text = variant.name;
+  if (variant.price_modifier > 0) {
+    text += ` (+$${variant.price_modifier.toFixed(0)})`;
+  } else if (variant.price_modifier < 0) {
+    text += ` (-$${Math.abs(variant.price_modifier).toFixed(0)})`;
+  }
+  return text;
+};
 ---
 
 <div 
@@ -55,6 +68,7 @@ const displayPrice = selectedVariantData
   data-addon-id={id}
   data-requires-ticket={requiresTicketType || ''}
   data-has-variants={hasVariants ? 'true' : 'false'}
+  data-variant-display={variantDisplay}
   class:list={[{ 'has-quantity': quantity > 0, 'has-error': hasError }]}
 >
   <div class="addon-main">
@@ -72,9 +86,9 @@ const displayPrice = selectedVariantData
     </div>
   </div>
 
-  {hasVariants && (
+  {hasVariants && variantDisplay === 'buttons' && (
     <div class="addon-variants">
-      <div class="variant-selector" data-addon-id={id}>
+      <div class="variant-selector variant-buttons" data-addon-id={id}>
         {variants.map((variant) => (
           <button
             type="button"
@@ -89,6 +103,30 @@ const displayPrice = selectedVariantData
             )}
           </button>
         ))}
+      </div>
+    </div>
+  )}
+
+  {hasVariants && variantDisplay === 'dropdown' && (
+    <div class="addon-variants">
+      <div class="variant-selector variant-dropdown" data-addon-id={id}>
+        <select class="variant-select" data-addon-id={id}>
+          <option value="" disabled selected>Select an option</option>
+          {variants.map((variant) => (
+            <option 
+              value={variant.id} 
+              data-price-modifier={variant.price_modifier}
+              disabled={!variant.available}
+            >
+              {formatVariantOption(variant)}{!variant.available ? ' (Sold out)' : ''}
+            </option>
+          ))}
+        </select>
+        <div class="select-arrow">
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
       </div>
     </div>
   )}
@@ -178,7 +216,8 @@ const displayPrice = selectedVariantData
     padding: 0 16px 16px;
   }
 
-  .variant-selector {
+  /* Button variant styles */
+  .variant-buttons {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -223,6 +262,52 @@ const displayPrice = selectedVariantData
 
   .variant-btn.selected .variant-modifier {
     opacity: 1;
+  }
+
+  /* Dropdown variant styles */
+  .variant-dropdown {
+    position: relative;
+    width: 100%;
+  }
+
+  .variant-select {
+    width: 100%;
+    padding: 12px 40px 12px 14px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-white);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .variant-select:hover {
+    border-color: var(--fever-blue);
+  }
+
+  .variant-select:focus {
+    outline: none;
+    border-color: var(--fever-blue);
+    box-shadow: 0 0 0 3px var(--fever-blue-light);
+  }
+
+  .variant-select option:disabled {
+    color: var(--text-muted);
+  }
+
+  .select-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-secondary);
   }
 
   .addon-footer {

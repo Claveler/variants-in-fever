@@ -1,6 +1,6 @@
-# Fever Ticket Selector
+# Variants in Fever
 
-A ticket selector component inspired by Fever's event ticketing interface, featuring ticket types with quantity controls and add-ons with images.
+A ticket selector component inspired by Fever's event ticketing interface, featuring ticket types with quantity controls and add-ons with images and **variant selection** (e.g., sizes for merchandise).
 
 ## Tech Stack
 

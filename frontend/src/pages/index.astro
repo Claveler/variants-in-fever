@@ -1,0 +1,130 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TicketSelector from '../components/TicketSelector.astro';
+
+// Sample data for ARTE MUSEUM event based on the Fever listing
+const eventData = {
+  id: "arte-museum-ny",
+  name: "ARTE MUSEUM: An Immersive Media Art Exhibition",
+  tickets: [
+    {
+      id: "adult",
+      name: "Adult (13+)",
+      description: "Entry ticket for guests aged 13 and above. Includes access to ARTE MUSEUM and ARTE CAFE with one complimentary drink. From Monday to Thursday you can arrive anytime between 10 am and 5:30 pm (the venue closes at 7 pm). From Friday to Sunday you can arrive anytime between 10 am and 7:30 pm (the venue closes at 9 pm).",
+      price: 20.40,
+      min_quantity: 0,
+      max_quantity: 10
+    },
+    {
+      id: "child",
+      name: "Child (3-12)",
+      description: "Entry ticket for children aged 3-12. Children under 3 enter free. Includes access to ARTE MUSEUM and ARTE CAFE. From Monday to Thursday you can arrive anytime between 10 am and 5:30 pm (the venue closes at 7 pm). From Friday to Sunday you can arrive anytime between 10 am and 7:30 pm (the venue closes at 9 pm).",
+      price: 20.40,
+      min_quantity: 0,
+      max_quantity: 10
+    }
+  ],
+  addons: [
+    {
+      id: "parking",
+      name: "Parking",
+      description: "Save time and stress by securing a parking spot at or near the event venue. This is a long description that shows how the text gets truncated when it exceeds a certain length to maintain a clean card layout.",
+      price: 20.00,
+      image_url: "https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=400&h=400&fit=crop",
+      requires_ticket_type: "adult",
+      min_required_tickets: 1,
+      variants: null
+    },
+    {
+      id: "tshirt",
+      name: "Event T-Shirt",
+      description: "Take home a piece of the experience with our exclusive ARTE MUSEUM t-shirt. Premium cotton, available in multiple sizes.",
+      price: 35.00,
+      image_url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
+      requires_ticket_type: null,
+      min_required_tickets: 0,
+      variants: [
+        { id: "xs", name: "XS", price_modifier: 0, available: true },
+        { id: "s", name: "S", price_modifier: 0, available: true },
+        { id: "m", name: "M", price_modifier: 0, available: true },
+        { id: "l", name: "L", price_modifier: 0, available: true },
+        { id: "xl", name: "XL", price_modifier: 0, available: true },
+        { id: "xxl", name: "XXL", price_modifier: 5, available: true }
+      ]
+    },
+    {
+      id: "photobook",
+      name: "Photo Book",
+      description: "A beautiful hardcover photo book featuring the best artworks from the exhibition. Choose your preferred edition.",
+      price: 45.00,
+      image_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=400&fit=crop",
+      requires_ticket_type: null,
+      min_required_tickets: 0,
+      variants: [
+        { id: "standard", name: "Standard", price_modifier: 0, available: true },
+        { id: "deluxe", name: "Deluxe", price_modifier: 25, available: true },
+        { id: "collectors", name: "Collector's", price_modifier: 55, available: false }
+      ]
+    }
+  ]
+};
+---
+
+<Layout title="Select Tickets - ARTE MUSEUM">
+  <main class="page-container">
+    <header class="page-header">
+      <h1 class="event-title">{eventData.name}</h1>
+      <p class="event-subtitle">Select date and session</p>
+    </header>
+
+    <section class="selector-section">
+      <TicketSelector 
+        eventId={eventData.id}
+        tickets={eventData.tickets}
+        addons={eventData.addons}
+      />
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .page-container {
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .event-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .event-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .selector-section {
+    display: flex;
+    justify-content: center;
+  }
+
+  @media (max-width: 480px) {
+    .page-container {
+      padding: 20px 16px;
+    }
+
+    .event-title {
+      font-size: 20px;
+    }
+  }
+</style>

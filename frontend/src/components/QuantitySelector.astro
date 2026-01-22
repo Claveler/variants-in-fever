@@ -1,0 +1,73 @@
+---
+interface Props {
+  value: number;
+  min?: number;
+  max?: number;
+  id: string;
+}
+
+const { value, min = 0, max = 10, id } = Astro.props;
+---
+
+<div class="quantity-selector" data-id={id} data-min={min} data-max={max}>
+  <button
+    type="button"
+    class="qty-btn minus"
+    aria-label="Decrease quantity"
+    disabled={value <= min}
+  >
+    <svg width="14" height="2" viewBox="0 0 14 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 1H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </button>
+  <span class="qty-value">{value}</span>
+  <button
+    type="button"
+    class="qty-btn plus"
+    aria-label="Increase quantity"
+    disabled={value >= max}
+  >
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </button>
+</div>
+
+<style>
+  .quantity-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .qty-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--fever-blue-light);
+    background: var(--bg-white);
+    color: var(--fever-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .qty-btn:hover:not(:disabled) {
+    background: var(--fever-blue-light);
+    border-color: var(--fever-blue);
+  }
+
+  .qty-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .qty-value {
+    min-width: 24px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-primary);
+  }
+</style>

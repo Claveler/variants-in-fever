@@ -1,0 +1,505 @@
+---
+import TicketCard from './TicketCard.astro';
+import AddOnCard from './AddOnCard.astro';
+import ValidationAlert from './ValidationAlert.astro';
+
+interface TicketType {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  min_quantity: number;
+  max_quantity: number;
+}
+
+interface Variant {
+  id: string;
+  name: string;
+  price_modifier: number;
+  available: boolean;
+}
+
+interface AddOn {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  requires_ticket_type?: string;
+  min_required_tickets: number;
+  variants?: Variant[];
+}
+
+interface Props {
+  eventId: string;
+  tickets: TicketType[];
+  addons: AddOn[];
+}
+
+const { eventId, tickets, addons } = Astro.props;
+
+// Initial state
+const initialTicketQuantities: Record<string, number> = {};
+tickets.forEach(t => initialTicketQuantities[t.id] = 0);
+
+const initialAddonQuantities: Record<string, number> = {};
+addons.forEach(a => initialAddonQuantities[a.id] = 0);
+---
+
+<div class="ticket-selector" data-event-id={eventId}>
+  <!-- Tickets Section -->
+  <div class="tickets-section">
+    {tickets.map((ticket, index) => (
+      <div class="ticket-wrapper">
+        <TicketCard
+          id={ticket.id}
+          name={ticket.name}
+          description={ticket.description}
+          price={ticket.price}
+          quantity={0}
+          isLast={index === tickets.length - 1}
+        />
+      </div>
+    ))}
+  </div>
+
+  <!-- Add-ons Section -->
+  {addons.length > 0 && (
+    <div class="addons-section">
+      <div class="section-divider">
+        <span>ADD-ONS</span>
+      </div>
+      
+      <div class="validation-container" id="addon-validation">
+        <ValidationAlert 
+          message="To purchase the Parking add-on, you need to select at least 1 Adult ticket. Please adjust your selection to proceed."
+          visible={false}
+        />
+      </div>
+
+      <div class="addons-list">
+        {addons.map((addon) => (
+          <AddOnCard
+            id={addon.id}
+            name={addon.name}
+            description={addon.description}
+            price={addon.price}
+            imageUrl={addon.image_url}
+            quantity={0}
+            requiresTicketType={addon.requires_ticket_type}
+            variants={addon.variants}
+          />
+        ))}
+      </div>
+    </div>
+  )}
+
+  <!-- Footer with Total and CTA -->
+  <div class="selector-footer">
+    <button type="button" class="cta-button" id="checkout-btn">
+      <span class="cta-text">
+        <span class="total-amount">$0.00</span>
+        <span class="cta-separator">–</span>
+        <span class="cta-label">Get it</span>
+      </span>
+    </button>
+  </div>
+</div>
+
+<script define:vars={{ tickets, addons }}>
+  // State management
+  const state = {
+    tickets: {},
+    addons: {}, // Now stores { quantity, variant_id } per addon
+    total: 0,
+    errors: []
+  };
+
+  // Initialize state
+  tickets.forEach(t => state.tickets[t.id] = 0);
+  addons.forEach(a => state.addons[a.id] = { quantity: 0, variant_id: null });
+
+  // DOM elements
+  const selector = document.querySelector('.ticket-selector');
+  const checkoutBtn = document.getElementById('checkout-btn');
+  const totalAmountEl = document.querySelector('.total-amount');
+  const ctaLabelEl = document.querySelector('.cta-label');
+  const validationContainer = document.getElementById('addon-validation');
+
+  // Calculate total
+  function calculateTotal() {
+    let total = 0;
+    
+    tickets.forEach(ticket => {
+      total += ticket.price * state.tickets[ticket.id];
+    });
+    
+    addons.forEach(addon => {
+      const addonState = state.addons[addon.id];
+      if (addonState.quantity > 0) {
+        let addonPrice = addon.price;
+        // Add variant price modifier if selected
+        if (addon.variants && addonState.variant_id) {
+          const variant = addon.variants.find(v => v.id === addonState.variant_id);
+          if (variant) {
+            addonPrice += variant.price_modifier;
+          }
+        }
+        total += addonPrice * addonState.quantity;
+      }
+    });
+    
+    return total;
+  }
+
+  // Validate cart
+  function validateCart() {
+    const errors = [];
+    
+    addons.forEach(addon => {
+      const addonState = state.addons[addon.id];
+      if (addonState.quantity > 0) {
+        // Check ticket requirement
+        if (addon.requires_ticket_type) {
+          const requiredTicketQty = state.tickets[addon.requires_ticket_type] || 0;
+          if (requiredTicketQty < addon.min_required_tickets) {
+            errors.push({
+              addon_id: addon.id,
+              message: `To purchase the ${addon.name} add-on, you need to select at least ${addon.min_required_tickets} ${addon.requires_ticket_type.charAt(0).toUpperCase() + addon.requires_ticket_type.slice(1)} ticket. Please adjust your selection to proceed.`
+            });
+          }
+        }
+        
+        // Check variant requirement
+        if (addon.variants && addon.variants.length > 0 && !addonState.variant_id) {
+          errors.push({
+            addon_id: addon.id,
+            message: `Please select a size/option for ${addon.name} before adding to cart.`
+          });
+        }
+      }
+    });
+    
+    return errors;
+  }
+
+  // Update addon card price display
+  function updateAddonPriceDisplay(addonId) {
+    const addon = addons.find(a => a.id === addonId);
+    if (!addon) return;
+    
+    const card = document.querySelector(`[data-addon-id="${addonId}"]`);
+    if (!card) return;
+    
+    const priceEl = card.querySelector('.addon-price strong');
+    if (!priceEl) return;
+    
+    const addonState = state.addons[addonId];
+    let displayPrice = addon.price;
+    
+    if (addon.variants && addonState.variant_id) {
+      const variant = addon.variants.find(v => v.id === addonState.variant_id);
+      if (variant) {
+        displayPrice += variant.price_modifier;
+      }
+    }
+    
+    priceEl.textContent = `$${displayPrice.toFixed(2)}`;
+  }
+
+  // Update UI
+  function updateUI() {
+    // Update total
+    state.total = calculateTotal();
+    totalAmountEl.textContent = `$${state.total.toFixed(2)}`;
+    
+    // Validate
+    state.errors = validateCart();
+    
+    // Update validation alert
+    const alertEl = validationContainer?.querySelector('.validation-alert');
+    const alertMessageEl = alertEl?.querySelector('.alert-message');
+    
+    if (state.errors.length > 0) {
+      if (alertEl) {
+        alertEl.classList.add('visible');
+        if (alertMessageEl) {
+          alertMessageEl.textContent = state.errors[0].message;
+        }
+      }
+      ctaLabelEl.textContent = 'Review your selection';
+      checkoutBtn.classList.add('has-error');
+      
+      // Mark addon cards with errors
+      addons.forEach(addon => {
+        const card = document.querySelector(`[data-addon-id="${addon.id}"]`);
+        const hasError = state.errors.some(e => e.addon_id === addon.id);
+        card?.classList.toggle('has-error', hasError);
+      });
+    } else {
+      alertEl?.classList.remove('visible');
+      ctaLabelEl.textContent = 'Get it';
+      checkoutBtn.classList.remove('has-error');
+      
+      addons.forEach(addon => {
+        const card = document.querySelector(`[data-addon-id="${addon.id}"]`);
+        card?.classList.remove('has-error');
+      });
+    }
+    
+    // Update ticket cards active state
+    tickets.forEach(ticket => {
+      const card = document.querySelector(`[data-ticket-id="${ticket.id}"]`);
+      card?.classList.toggle('has-quantity', state.tickets[ticket.id] > 0);
+    });
+    
+    // Update addon cards active state
+    addons.forEach(addon => {
+      const card = document.querySelector(`[data-addon-id="${addon.id}"]`);
+      const addonState = state.addons[addon.id];
+      if (!state.errors.some(e => e.addon_id === addon.id)) {
+        card?.classList.toggle('has-quantity', addonState.quantity > 0);
+      }
+    });
+  }
+
+  // Handle quantity changes
+  function handleQuantityChange(id, type, delta) {
+    if (type === 'ticket') {
+      const ticket = tickets.find(t => t.id === id);
+      if (ticket) {
+        const newQty = Math.max(ticket.min_quantity, Math.min(ticket.max_quantity, state.tickets[id] + delta));
+        state.tickets[id] = newQty;
+        
+        // Update quantity display
+        const qtyEl = document.querySelector(`[data-id="ticket-${id}"] .qty-value`);
+        if (qtyEl) qtyEl.textContent = newQty.toString();
+        
+        // Update button states
+        const selectorEl = document.querySelector(`[data-id="ticket-${id}"]`);
+        const minusBtn = selectorEl?.querySelector('.minus');
+        const plusBtn = selectorEl?.querySelector('.plus');
+        if (minusBtn) minusBtn.disabled = newQty <= ticket.min_quantity;
+        if (plusBtn) plusBtn.disabled = newQty >= ticket.max_quantity;
+      }
+    } else if (type === 'addon') {
+      const addon = addons.find(a => a.id === id);
+      if (addon) {
+        const addonState = state.addons[id];
+        const newQty = Math.max(0, Math.min(10, addonState.quantity + delta));
+        addonState.quantity = newQty;
+        
+        // Update quantity display
+        const qtyEl = document.querySelector(`[data-id="addon-${id}"] .qty-value`);
+        if (qtyEl) qtyEl.textContent = newQty.toString();
+        
+        // Update button states
+        const selectorEl = document.querySelector(`[data-id="addon-${id}"]`);
+        const minusBtn = selectorEl?.querySelector('.minus');
+        const plusBtn = selectorEl?.querySelector('.plus');
+        if (minusBtn) minusBtn.disabled = newQty <= 0;
+        if (plusBtn) plusBtn.disabled = newQty >= 10;
+      }
+    }
+    
+    updateUI();
+  }
+
+  // Handle variant selection
+  function handleVariantSelect(addonId, variantId) {
+    const addon = addons.find(a => a.id === addonId);
+    if (!addon || !addon.variants) return;
+    
+    const addonState = state.addons[addonId];
+    addonState.variant_id = variantId;
+    
+    // Update variant button states
+    const variantSelector = document.querySelector(`.variant-selector[data-addon-id="${addonId}"]`);
+    if (variantSelector) {
+      variantSelector.querySelectorAll('.variant-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.variantId === variantId);
+      });
+    }
+    
+    // Update displayed price
+    updateAddonPriceDisplay(addonId);
+    
+    updateUI();
+  }
+
+  // Event delegation for quantity buttons
+  document.addEventListener('click', (e) => {
+    // Quantity button clicks
+    const btn = e.target.closest('.qty-btn');
+    if (btn) {
+      const selectorEl = btn.closest('.quantity-selector');
+      const id = selectorEl?.dataset.id;
+      if (!id) return;
+      
+      const delta = btn.classList.contains('plus') ? 1 : -1;
+      
+      if (id.startsWith('ticket-')) {
+        handleQuantityChange(id.replace('ticket-', ''), 'ticket', delta);
+      } else if (id.startsWith('addon-')) {
+        handleQuantityChange(id.replace('addon-', ''), 'addon', delta);
+      }
+      return;
+    }
+    
+    // Variant button clicks
+    const variantBtn = e.target.closest('.variant-btn');
+    if (variantBtn && !variantBtn.disabled) {
+      const variantSelector = variantBtn.closest('.variant-selector');
+      const addonId = variantSelector?.dataset.addonId;
+      const variantId = variantBtn.dataset.variantId;
+      
+      if (addonId && variantId) {
+        handleVariantSelect(addonId, variantId);
+      }
+      return;
+    }
+  });
+
+  // Checkout button click
+  checkoutBtn?.addEventListener('click', () => {
+    if (state.errors.length > 0) {
+      // Scroll to validation alert
+      validationContainer?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    
+    if (state.total === 0) {
+      alert('Please select at least one ticket');
+      return;
+    }
+    
+    // Build order summary
+    let summary = `Order Summary:\n\n`;
+    
+    tickets.forEach(ticket => {
+      const qty = state.tickets[ticket.id];
+      if (qty > 0) {
+        summary += `${ticket.name}: ${qty} x $${ticket.price.toFixed(2)}\n`;
+      }
+    });
+    
+    addons.forEach(addon => {
+      const addonState = state.addons[addon.id];
+      if (addonState.quantity > 0) {
+        let addonPrice = addon.price;
+        let variantName = '';
+        if (addon.variants && addonState.variant_id) {
+          const variant = addon.variants.find(v => v.id === addonState.variant_id);
+          if (variant) {
+            addonPrice += variant.price_modifier;
+            variantName = ` (${variant.name})`;
+          }
+        }
+        summary += `${addon.name}${variantName}: ${addonState.quantity} x $${addonPrice.toFixed(2)}\n`;
+      }
+    });
+    
+    summary += `\nTotal: $${state.total.toFixed(2)}`;
+    
+    alert(summary);
+  });
+
+  // Initial UI update
+  updateUI();
+</script>
+
+<style>
+  .ticket-selector {
+    max-width: 420px;
+    margin: 0 auto;
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+
+  .tickets-section {
+    padding: 20px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .ticket-wrapper {
+    position: relative;
+  }
+
+  .addons-section {
+    padding: 20px;
+  }
+
+  .section-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .section-divider::before,
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+  }
+
+  .section-divider span {
+    padding: 0 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  .addons-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .selector-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .cta-button {
+    width: 100%;
+    padding: 16px 24px;
+    background: var(--fever-blue);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+  }
+
+  .cta-button:hover {
+    background: var(--fever-blue-dark);
+  }
+
+  .cta-button.has-error {
+    background: var(--fever-blue);
+  }
+
+  .cta-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .total-amount {
+    font-weight: 700;
+  }
+
+  .cta-separator {
+    opacity: 0.7;
+  }
+</style>

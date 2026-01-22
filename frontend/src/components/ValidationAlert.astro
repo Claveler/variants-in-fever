@@ -1,0 +1,59 @@
+---
+interface Props {
+  message: string;
+  visible?: boolean;
+}
+
+const { message, visible = false } = Astro.props;
+---
+
+<div class="validation-alert" class:list={[{ visible }]} role="alert">
+  <div class="alert-icon">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" />
+      <path d="M10 6V10M10 14H10.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </div>
+  <div class="alert-content">
+    <p class="alert-title">Action required</p>
+    <p class="alert-message">{message}</p>
+  </div>
+</div>
+
+<style>
+  .validation-alert {
+    display: none;
+    background: var(--fever-red-light);
+    border: 1px solid var(--fever-red-border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .validation-alert.visible {
+    display: flex;
+  }
+
+  .alert-icon {
+    flex-shrink: 0;
+    color: var(--fever-red);
+  }
+
+  .alert-content {
+    flex: 1;
+  }
+
+  .alert-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fever-red);
+    margin-bottom: 4px;
+  }
+
+  .alert-message {
+    font-size: 14px;
+    color: var(--fever-red);
+    line-height: 1.5;
+  }
+</style>

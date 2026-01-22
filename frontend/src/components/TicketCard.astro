@@ -1,0 +1,109 @@
+---
+import QuantitySelector from './QuantitySelector.astro';
+
+interface Props {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  quantity: number;
+  isLast?: boolean;
+}
+
+const { id, name, description, price, quantity, isLast = false } = Astro.props;
+---
+
+<div class="ticket-card" data-ticket-id={id} class:list={[{ 'has-quantity': quantity > 0, 'is-last': isLast }]}>
+  <div class="ticket-content">
+    <div class="ticket-info">
+      <h3 class="ticket-name">{name}</h3>
+      <button type="button" class="more-info-btn" data-description={description}>
+        More info
+      </button>
+      <p class="ticket-price">${price.toFixed(2)}</p>
+    </div>
+    <div class="ticket-quantity">
+      <QuantitySelector id={`ticket-${id}`} value={quantity} />
+    </div>
+  </div>
+  {!isLast && <div class="connector-line"></div>}
+</div>
+
+<style>
+  .ticket-card {
+    position: relative;
+    padding: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-white);
+    transition: border-color 0.2s ease;
+  }
+
+  .ticket-card.has-quantity {
+    border-color: var(--border-color-active);
+  }
+
+  .ticket-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ticket-info {
+    flex: 1;
+  }
+
+  .ticket-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .more-info-btn {
+    background: none;
+    border: none;
+    color: var(--fever-blue);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .more-info-btn:hover {
+    text-decoration: underline;
+  }
+
+  .ticket-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 8px;
+  }
+
+  .ticket-quantity {
+    flex-shrink: 0;
+  }
+
+  /* Connector line between tickets */
+  .connector-line {
+    position: absolute;
+    right: 52px;
+    bottom: -20px;
+    width: 2px;
+    height: 20px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--fever-blue-light) 0,
+      var(--fever-blue-light) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+    z-index: 1;
+  }
+
+  .is-last .connector-line {
+    display: none;
+  }
+</style>
